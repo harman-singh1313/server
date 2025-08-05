@@ -112,9 +112,9 @@ var page_header=`<!DOCTYPE html>
 `;
 
 const server = createServer((req, res) => {
-  res.setHeader('content-type','text/html');
   const requested_file_path = path.join(__dirname, req.url);
-  // const file_ext = path.extname(requested_file_path);
+  res.setHeader('content-type','text/html');
+  // const file_ext = path.extname(requested_file_path); 
   console.log(`path ${requested_file_path}`);
 
   
