@@ -1,5 +1,5 @@
 {
-  "name": "node-js-practice",
+  "name": "js-practice",
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
@@ -10,11 +10,15 @@
     "type": "git",
     "url": "git+https://github.com/harman-singh1313/server.git"
   },
-  "author": "",
+  "author": "Harman Singh",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/harman-singh1313/server/issues"
   },
   "homepage": "https://github.com/harman-singh1313/server#readme",
-  "description": ""
+  "description": "server",
+  "dependencies": {
+    "dotenv": "^17.2.1",
+    "nodemailer": "^7.0.5"
+  }
 }

@@ -1,20 +1,33 @@
 const { createServer } = require("node:http");
 const path = require("path");
 const fs = require("fs");
+const querystring = require("querystring");
+const url = require("url");
+require("dotenv").config();
+const nodemailer = require("nodemailer");
+const { Console, info, error } = require("node:console");
+
 const hostname = "127.0.0.1";
-const port = 3500;
+const port = 4300;
 
 const server = createServer((req, res) => {
   const req_url = req.url;
   const requested_file_path = path.join(__dirname, req_url);
   const file_ext = path.extname(requested_file_path);
-  console.log(`file url ${req_url}`);
-  console.log(`req file path ${requested_file_path}`);
-  console.log(`file ext ${file_ext}`);
-  
-  // res.setHeader("Content-Type", "text/plain");
 
-  //creat object of all content types
+  const parasurl = url.parse(req.url); //url data converted  object form
+
+  const queryParams = querystring.parse(parasurl.query); //bulliyan data converted into string
+
+  console.log(parasurl);
+  console.log(queryParams);
+
+  // console.log(`file url ${req_url}`);
+  // console.log(`req file path ${requested_file_path}`);
+  // console.log(`file ext ${file_ext}`);
+  // console.log(process.env.MSG);
+
+  //====================creat object of all content types
 
   const content_types = {
     ".html": "text/html",
@@ -22,13 +35,13 @@ const server = createServer((req, res) => {
     ".js": "application/js",
     ".jpg": "image/jpg",
     ".png": "image/png",
-   ".gif": "image/gif",
-    ".svg": "image/svg"
+    ".gif": "image/gif",
+    ".svg": "image/svg",
   };
 
-  //content_types[file_ext]  = is use to send the content type to the brouser like html,css,js...etc
+  //=======================content_types[file_ext]  = is use to send the content type to the brouser like html,css,js...etc
 
-  const content_type = content_types[file_ext];  
+  const content_type = content_types[file_ext];
 
   const html_pages = {
     "/": "/views/index.html",
@@ -37,95 +50,136 @@ const server = createServer((req, res) => {
     "/contact": "/views/contact.html",
     "/projects": "/views/projects.html",
     "/project-details": "/views/project-details.html",
-    "/blog-details": "/views/blog-details.html"
+    "/blog-details": "/views/blog-details.html",
   };
 
   //"User ne jo URL request kiya hai (req_url), uske according html_pages object se corresponding HTML page ka content ya file name ya path nikaal lo."
- const html_page = html_pages[req_url];
+  const html_page = html_pages[req_url];
   // console.log(`Html Page ${html_page}`);
 
   if (html_page) {
-    const home_page = path.join(__dirname,html_page);
-     fs.readFile(home_page, (err,data) => {  
-
+    const home_page = path.join(__dirname, html_page);
+    fs.readFile(home_page, (err, data) => {
       if (err) {
         res.setHeader("Content-Type", `${content_type}`);
         res.statusCode = 404;
         res.end("<h1> Error 404 page is not found </h1>");
-      } 
-      
-      else {
-          data=data.toString() //local scope and global , toString is used because data is rinning in buffering and common head in not replaceing 
-          const common_header_page= path.join(__dirname, '/views/common_head.html');
-          console.log(common_header_page)
-          fs.readFile(common_header_page,(err1,commonhead)=>{
-            if(err1)
-            {
-              res.setHeader('Content-Type','text/plain');
-              res.statusCode=404;
-              res.end('Error common-head is nor found')
-            }
+      } else {
+        if (Object.keys(queryParams).length != 0) {
+          console.log("query params:");
+          console.log(`Welcome :${queryParams.name}`);
+        }
 
-            else{
-            console.log(commonhead);
-            
-            data=data.replace('[common_head]',commonhead.toString());  //replace is use to common_head in all pages
-  
-            }
-          });
+        data = data.toString(); //local scope and global , toString is used because data is rinning in buffering and common head in not replaceing
+        const common_header_page = path.join(
+          __dirname,
+          "/views/common_head.html"
+        );
+        //==== console.log(common_header_page);
 
-          
-           //common menu part start
-           //give path to common manu html page
+        fs.readFile(common_header_page, (err1, commonhead) => {
+          if (err1) {
+            res.setHeader("Content-Type", "text/plain");
+            res.statusCode = 404;
+            res.end("Error common-head is nor found");
+          } else {
+            //=== console.log(commonhead);
 
-           const common_menu_page= path.join(__dirname,'/views/common_menu.html');
-           fs.readFile(common_menu_page,(err3,commonmenu)=>{
+            data = data.replace("[common_head]", commonhead.toString()); //replace is use to common_head in all pages
+          }
+        });
 
-            if(err3)
-            {
-              res.setHeader('Content-Type',`${content_type}`);
-              res.statusCode= 404;
-              res.end('Error 404 menu is not found');
+        //===================common menu part start
+        //===================give path to common manu html page
 
-            }
-            else{
-              data=data.replace('[common_menu]',commonmenu.toString());
-              
-            }
+        const common_menu_page = path.join(
+          __dirname,
+          "/views/common_menu.html"
+        );
 
-          });
+        fs.readFile(common_menu_page, (err3, commonmenu) => {
+          if (err3) {
+            res.setHeader("Content-Type", `${content_type}`);
+            res.statusCode = 404;
+            res.end("Error 404 menu is not found");
+          } else {
+            data = data.replace("[common_menu]", commonmenu.toString());
+          }
+        });
 
-          //common footer part start
-          //give path to common footer page
-            const common_footer_page= path.join(__dirname,'/views/common_footer.html')
-           fs.readFile(common_footer_page,(err2,commonfooter)=>{
-            if(err2)
-            {
-              res.setHeader('Content-Type',`${content_type}` );
-              res.statusCode= 404;
-              res.end('Error 404 footer is not found')
-            }
+        //==================common footer part start
+        //==================give path to common footer page
 
-            else
-            {
-              data=data.replace('[common_footer]' ,commonfooter.toString());
-               res.setHeader('Content-Type',`${content_type}`);
-              res.statusCode = 200;
-              res.end(data);
-       
-            }
-           }); 
-
+        const common_footer_page = path.join(
+          __dirname,
+          "/views/common_footer.html"
+        );
+        fs.readFile(common_footer_page, (err2, commonfooter) => {
+          if (err2) {
+            res.setHeader("Content-Type", `${content_type}`);
+            res.statusCode = 404;
+            res.end("Error 404 footer is not found");
+          } else {
+            data = data.replace("[common_footer]", commonfooter.toString());
+            res.setHeader("Content-Type", `${content_type}`);
+            res.statusCode = 200;
+            res.end(data);
+          }
+        });
       }
     });
 
+    //========== pick data from contant page
+  } else if (parasurl.pathname === "/submit-contant") {
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk.toString();
+    });
 
+    req.on("end", () => {
+     data = querystring.parse(body);
+      console.log(data);
+  
+
+    // Create a transporter object using Gmail's SMTP server
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user:'ramgarhia10850@gmail.com',
+        pass:'dzuxqohpevogmqss',
+      },
+    });
+
+    const mailoptions = {
+      from:'ramgarhia10850@gmail.com', // Sender address (your Gmail address)
+      to: `${data.email}`, // Recipient's email address
+      subject: "Thank to reaching us", // Subject line
+      text: "our executive contact you soon",
+    };
+
+    transporter.sendMail(mailoptions)
+      .then((info) => {
+        console.log("email sent:%s", info.messageId);
+        console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+      })
+
+      .catch((error) => {
+        console.error("Error sending Email", error.message);
+      });
+
+    res.setHeader("Content-Type", "text/plain");
+    res.statusCode = 200;
+    res.end("Thanks! your message has been sent");
+
+      });
   }
-
-
-
-   else if (req_url.includes("assets/css")) {
-        // var home= path.join('Content-Type','text/css')
+  
+  
+  
+  
+  else if (req_url.includes("assets/css")) {
+    // var home= path.join('Content-Type','text/css')
 
     var page = fs.readFile(requested_file_path, (err, data) => {
       if (err) {
@@ -138,8 +192,6 @@ const server = createServer((req, res) => {
         res.end(data);
       }
     });
-
-
   } else if (req_url.includes("assets/js")) {
     var page = fs.readFile(requested_file_path, (err, data) => {
       if (err) {
@@ -152,8 +204,6 @@ const server = createServer((req, res) => {
         res.end(data);
       }
     });
-
-
   } else if (req_url.includes("assets/images")) {
     var page = fs.readFile(requested_file_path, (err, data) => {
       if (err) {
@@ -166,10 +216,7 @@ const server = createServer((req, res) => {
         res.end(data);
       }
     });
-
-
-  }
-   else if (req_url.includes("assets/scss")) {
+  } else if (req_url.includes("assets/scss")) {
     var page = fs.readFile(requested_file_path, (err, data) => {
       if (err) {
         res.setHeader("Content-Type", `${content_type}`);
