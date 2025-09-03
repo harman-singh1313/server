@@ -19,6 +19,7 @@
   "description": "server",
   "dependencies": {
     "dotenv": "^17.2.1",
+    "mongodb": "6.19",
     "nodemailer": "^7.0.5"
   }
 }

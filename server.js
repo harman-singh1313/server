@@ -7,8 +7,21 @@ require("dotenv").config();
 const nodemailer = require("nodemailer");
 const { Console, info, error } = require("node:console");
 
+const { MongoClient, ServerApiVersion } = require('mongodb');
+const uri = process.env.MONGODB_URI;
+
+require('dotenv').config();
+
+// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+const client = new MongoClient(uri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  }
+});
 const hostname = "127.0.0.1";
-const port = 4300;
+const port = 5000;
 
 const server = createServer((req, res) => {
   const req_url = req.url;
@@ -19,8 +32,8 @@ const server = createServer((req, res) => {
 
   const queryParams = querystring.parse(parasurl.query); //bulliyan data converted into string
 
-  console.log(parasurl);
-  console.log(queryParams);
+  // console.log(parasurl);
+  // console.log(queryParams);
 
   // console.log(`file url ${req_url}`);
   // console.log(`req file path ${requested_file_path}`);
@@ -66,8 +79,8 @@ const server = createServer((req, res) => {
         res.end("<h1> Error 404 page is not found </h1>");
       } else {
         if (Object.keys(queryParams).length != 0) {
-          console.log("query params:");
-          console.log(`Welcome :${queryParams.name}`);
+          // console.log("query params:");
+          // console.log(`Welcome :${queryParams.name}`);
         }
 
         data = data.toString(); //local scope and global , toString is used because data is rinning in buffering and common head in not replaceing
@@ -137,47 +150,65 @@ const server = createServer((req, res) => {
     });
 
     req.on("end", () => {
-     data = querystring.parse(body);
-      console.log(data);
-  
+      data = querystring.parse(body);
+      // console.log(data);
 
-    // Create a transporter object using Gmail's SMTP server
+      async function run() {
+        await client.connect();
+        // Send a ping to confirm a successful connection
+        await client.db("portfolioDB").command({ ping: 1 });
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user:'ramgarhia10850@gmail.com',
-        pass:'dzuxqohpevogmqss',
-      },
+        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        const myDB = client.db("portfolioDB");
+        const myColl = myDB.collection("contactUsData");
+        const result =  await myColl.insertOne(data);
+        console.log(
+          `A document was inserted with the _id: ${result.insertedId}`,
+        )
+
+        await client.close();
+
+      }
+
+      run();
+
+      // Create a transporter object using Gmail's SMTP server
+
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: 'ramgarhia16850@gmail.com',
+          pass: 'nnwiwxioemgcbmhc',
+        },
+      });
+
+      const mailoptions = {
+        from: 'ramgarhia16850@gmail.com', // Sender address (your Gmail address)
+        to: `${data.email}`, // Recipient's email address
+        subject: "Thank to reaching us", // Subject line
+        text: "our executive contact you soon",
+      };
+
+      transporter.sendMail(mailoptions)
+        .then((info) => {
+          console.log("email sent:%s", info.messageId);
+          console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+        })
+
+        .catch((error) => {
+          console.error("Error sending Email", error.message);
+        });
+
+      res.setHeader("Content-Type", "text/plain");
+      res.statusCode = 200;
+      res.end("Thanks! your message has been sent");
+
     });
-
-    const mailoptions = {
-      from:'ramgarhia10850@gmail.com', // Sender address (your Gmail address)
-      to: `${data.email}`, // Recipient's email address
-      subject: "Thank to reaching us", // Subject line
-      text: "our executive contact you soon",
-    };
-
-    transporter.sendMail(mailoptions)
-      .then((info) => {
-        console.log("email sent:%s", info.messageId);
-        console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
-      })
-
-      .catch((error) => {
-        console.error("Error sending Email", error.message);
-      });
-
-    res.setHeader("Content-Type", "text/plain");
-    res.statusCode = 200;
-    res.end("Thanks! your message has been sent");
-
-      });
   }
-  
-  
-  
-  
+
+
+
+
   else if (req_url.includes("assets/css")) {
     // var home= path.join('Content-Type','text/css')
 
